@@ -1,6 +1,7 @@
 # FICSIT Standard Industrial Color System (SICS)
 
 This repository hosts the official **FICSIT S.I.C.S. Portal**, a high-performance single-page application designed to manage factory aesthetics and wayfinding protocols in Satisfactory.
+Live Site can be found at [https://earthserpent89.github.io/SatisfactoryColors/](https://earthserpent89.github.io/SatisfactoryColors/)
 
 ## Features
 
