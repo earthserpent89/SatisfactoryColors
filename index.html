@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FICSIT Standard Industrial Color System (SICS)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ficsitBg: '#f5f5f0',
+                        ficsitOrange: '#FA9649', 
+                        ficsitSecondary: '#5F668C',
+                        ficsitDark: '#121214'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 500px; 
+            margin: 0 auto;
+            height: 300px; 
+        } 
+
+        .swatch-card, .info-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .swatch-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        .tab-active {
+            border-bottom: 4px solid #FA9649;
+            color: #FA9649;
+            background: rgba(250, 150, 73, 0.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-content {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #FA9649; border-radius: 5px; }
+    </style>
+</head>
+<body class="bg-ficsitBg text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Chosen Palette: FICSIT Standard Industrial (Unified & Comprehensive) -->
+    <!-- Application Structure Plan: A single-page application optimized for GitHub Pages. 
+         It combines the Master Swatch Registry (data-driven) and the Operations Manual (theory-driven).
+         The architecture uses state-based tab switching to keep the user focused.
+         All charts are re-initialized on view to ensure proper scaling. -->
+    <!-- Visualization & Content Choices: 
+         1. Goal: Verify 18-Slot Diversity -> Viz: Donut Chart -> Location: Registry tab.
+         2. Goal: Departmental Coverage Analysis -> Viz: Radar Chart -> Location: Manual tab.
+         3. Goal: User Education -> Content: Expert Tips & Usage Guide -> Justification: Provides context for 'why' these colors matter for factory performance.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header & Navigation -->
+    <header class="bg-ficsitDark text-white shadow-2xl sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col lg:flex-row justify-between items-center py-6 gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 bg-ficsitOrange flex items-center justify-center font-black italic text-ficsitDark rounded">F</div>
+                    <div>
+                        <h1 class="text-2xl font-black italic uppercase tracking-tighter leading-none">FICSIT S.I.C.S.</h1>
+                        <p class="text-ficsitOrange font-bold uppercase tracking-widest text-[10px] mt-1">Standard Industrial Color System</p>
+                    </div>
+                </div>
+
+                <!-- Global Stats Display -->
+                <div class="hidden sm:flex bg-white/5 border border-white/10 p-3 rounded-lg gap-6 backdrop-blur-md">
+                    <div class="text-center">
+                        <p class="text-[9px] font-black uppercase text-ficsitOrange mb-1">Slots Active</p>
+                        <p class="text-xl font-black">18</p>
+                    </div>
+                    <div class="text-center border-l border-white/10 pl-6">
+                        <p class="text-[9px] font-black uppercase text-ficsitOrange mb-1">Unique Codes</p>
+                        <p id="unique-count-header" class="text-xl font-black">0</p>
+                    </div>
+                </div>
+
+                <nav class="flex h-16">
+                    <button onclick="switchPage('registry')" id="nav-registry" class="tab-active px-8 flex items-center gap-2 font-black uppercase tracking-widest text-xs transition-all hover:bg-white/5">
+                        Registry
+                    </button>
+                    <button onclick="switchPage('manual')" id="nav-manual" class="px-8 flex items-center gap-2 font-black uppercase tracking-widest text-xs transition-all hover:bg-white/5 text-white/50">
+                        Manual
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-12 w-full flex-grow">
+        
+        <!-- PAGE 1: REGISTRY -->
+        <div id="page-registry" class="animate-content">
+            <div class="border-l-8 border-ficsitOrange pl-6 mb-12">
+                <h2 class="text-4xl font-black uppercase italic">Master Swatch Registry</h2>
+                <p class="text-slate-500 font-medium">Your global 18-slot configuration for the FICSIT Customizer tool.</p>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-wrap gap-2 mb-10 bg-white p-2 rounded-2xl border border-slate-200 w-fit">
+                <button onclick="setFilter('All')" class="filter-btn active px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl bg-ficsitOrange text-white transition-all">All</button>
+                <button onclick="setFilter('Production')" class="filter-btn px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 hover:bg-slate-50 transition-all">Production</button>
+                <button onclick="setFilter('Logistics')" class="filter-btn px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 hover:bg-slate-50 transition-all">Logistics</button>
+                <button onclick="setFilter('Roadways')" class="filter-btn px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl text-slate-400 hover:bg-slate-50 transition-all">Roadways</button>
+            </div>
+
+            <div id="swatch-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-20">
+                <!-- Injected via JS -->
+            </div>
+
+            <div class="bg-white rounded-3xl p-10 mb-20 border border-slate-200 shadow-sm flex flex-col lg:flex-row items-center gap-16">
+                <div class="flex-1">
+                    <h3 class="text-3xl font-black uppercase italic mb-4 text-ficsitDark">Functional Balance</h3>
+                    <p class="text-slate-600 mb-8 leading-relaxed">This chart verifies that your 18-slot configuration is departmentally balanced. Colors have been calibrated to avoid ambiguity between Fuel, Danger, and Highway signage.</p>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="p-6 bg-slate-50 rounded-2xl border-l-4 border-ficsitOrange">
+                            <span class="text-[10px] font-black text-slate-400 uppercase block mb-1">Status</span>
+                            <span class="text-xl font-black text-slate-800 uppercase italic">18 Slots Set</span>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border-l-4 border-slate-800">
+                            <span class="text-[10px] font-black text-slate-400 uppercase block mb-1">Library Size</span>
+                            <span id="unique-count-body" class="text-xl font-black text-slate-800">0 Colors</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="regChart"></canvas>
+                </div>
+            </div>
+
+            <div class="border-l-8 border-slate-900 pl-6 mb-8">
+                <h2 class="text-3xl font-black uppercase italic text-slate-900">Individual Color Library</h2>
+                <p class="text-slate-500 font-medium">Individual hex codes for independent painting, signage, and detail work.</p>
+            </div>
+            <div id="master-grid" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- PAGE 2: MANUAL -->
+        <div id="page-manual" class="hidden animate-content">
+            <div class="border-l-8 border-ficsitOrange pl-6 mb-12">
+                <h2 class="text-4xl font-black uppercase italic">Pioneer Operations Manual</h2>
+                <p class="text-slate-500 font-medium">Strategic guidelines for wayfinding and departmental standards.</p>
+            </div>
+
+            <!-- Strategy radar -->
+            <section class="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="bg-white rounded-3xl p-10 border border-slate-200 shadow-sm">
+                    <h3 class="text-2xl font-black uppercase italic mb-4">Wayfinding Logic</h3>
+                    <p class="text-slate-600 mb-6 leading-relaxed">The FICSIT S.I.C.S. minimizes 'Search-and-Identify' time. Following this radar profile ensures that your factory coverage remains balanced between Branding, Safety, and Logistics.</p>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-4 p-4 bg-ficsitBg rounded-xl border border-slate-200">
+                            <div class="w-10 h-10 bg-ficsitOrange rounded flex items-center justify-center font-bold text-ficsitDark">01</div>
+                            <p class="text-sm font-bold uppercase">Flow Visibility Priority</p>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 bg-ficsitBg rounded-xl border border-slate-200">
+                            <div class="w-10 h-10 bg-ficsitSecondary rounded flex items-center justify-center font-bold text-white">02</div>
+                            <p class="text-sm font-bold uppercase">Standardized Wayfinding</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Usage Cards -->
+            <div class="border-l-8 border-slate-400 pl-6 mb-8">
+                <h2 class="text-3xl font-black uppercase italic">Deployment Guidelines</h2>
+            </div>
+            <div id="usage-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Signage Standards -->
+            <div class="border-l-8 border-slate-800 pl-6 mb-12">
+                <h2 class="text-3xl font-black uppercase italic">Signage Standards</h2>
+            </div>
+            <div id="signage-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Expert Tips restored -->
+            <section class="bg-ficsitDark rounded-3xl p-10 text-white shadow-2xl">
+                <h2 class="text-2xl font-black uppercase italic text-ficsitOrange mb-8">Pioneer Expert Tips</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                    <div>
+                        <h4 class="font-black text-sm uppercase tracking-widest mb-3 text-white/80 underline decoration-ficsitOrange decoration-4">Finish Control</h4>
+                        <p class="text-xs leading-relaxed text-white/50">Use the <strong>Shiny</strong> finish for Caterium Tech to simulate metallic circuitry. Use <strong>Matte</strong> for Structural Steel to hide foundation seams.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-sm uppercase tracking-widest mb-3 text-white/80 underline decoration-ficsitOrange decoration-4">The 10% Rule</h4>
+                        <p class="text-xs leading-relaxed text-white/50">Keep 90% of your factory in neutral swatches (Grey/Structural). Reserve high-saturation colors (Red/Lime) for focal points to prevent visual noise.</p>
+                    </div>
+                    <div>
+                        <h4 class="font-black text-sm uppercase tracking-widest mb-3 text-white/80 underline decoration-ficsitOrange decoration-4">Night Visibility</h4>
+                        <p class="text-xs leading-relaxed text-white/50">Use <strong>Nuclear Lime</strong> or <strong>Pure White</strong> on signage text in dark areas. These catch the Pioneer flashlight beam from furthest away.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <footer class="bg-ficsitDark text-white/40 py-16 mt-20 text-center border-t border-white/5">
+        <p class="text-[10px] font-black uppercase tracking-[0.8em] mb-4">Official FICSIT Standard v7.2</p>
+        <p class="text-sm italic font-medium px-6">Comply with all color regulations. Efficiency is Mandatory.</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-10 right-10 bg-white text-slate-900 px-6 py-4 rounded-2xl shadow-2xl hidden z-50 flex items-center gap-4 border-l-8 border-ficsitOrange animate-bounce">
+        <div class="w-3 h-3 rounded-full bg-ficsitOrange animate-pulse"></div>
+        <span id="toast-msg" class="font-black uppercase tracking-widest text-[10px]">Copied to Clipboard</span>
+    </div>
+
+    <script>
+        // --- 1. DATA SOURCES ---
+        const swatches = [
+            { id: 1, name: "FICSIT Standard", type: "Production", primary: "#FA9649", secondary: "#5F668C", desc: "Default Branding. Salmon-Orange." },
+            { id: 2, name: "Pioneer Uniform", type: "Production", primary: "#D9CBB3", secondary: "#5F668C", desc: "Uniform-matched equipment." },
+            { id: 3, name: "Heavy Structure", type: "Infrastructure", primary: "#222222", secondary: "#FA9649", desc: "Foundations & Structural Steel." },
+            { id: 4, name: "Machine Neutral", type: "Production", primary: "#7F7F7F", secondary: "#FA9649", desc: "Base neutral for large machinery." },
+            { id: 5, name: "Emergency Alert", type: "Safety", primary: "#FF0000", secondary: "#121214", desc: "Pure Safety Red. High Contrast." },
+            { id: 6, name: "Caution / Bio", type: "Safety", primary: "#FFE000", secondary: "#121214", desc: "High-Vis Lemon Yellow." },
+            { id: 7, name: "Hwy: Directions", type: "Roadways", primary: "#006B3F", secondary: "#FFFFFF", desc: "Green destination signage." },
+            { id: 8, name: "Hwy: Information", type: "Roadways", primary: "#0038A8", secondary: "#FFFFFF", desc: "Blue service information." },
+            { id: 9, name: "Hwy: Construction", type: "Roadways", primary: "#FF5722", secondary: "#121214", desc: "Fluorescent Blaze Orange." },
+            { id: 10, name: "Caterium Tech", type: "Production", primary: "#FFB800", secondary: "#121214", desc: "Warm metallic gold circuitry." },
+            { id: 11, name: "Fluid: Water", type: "Logistics", primary: "#3282BA", secondary: "#FFFFFF", desc: "Standard aqueous identifier." },
+            { id: 12, name: "Fluid: Fuel", type: "Logistics", primary: "#BF360C", secondary: "#121214", desc: "Dark Burnt-Amber Fuel System." },
+            { id: 13, name: "Fluid: Acid", type: "Logistics", primary: "#CDDC39", secondary: "#4A148C", desc: "Sulfur-Lime Toxic identifier." },
+            { id: 14, name: "Power Grid", type: "Logistics", primary: "#ECA53B", secondary: "#121214", desc: "Electrical Network Status." },
+            { id: 15, name: "Nuclear Safety", type: "Safety", primary: "#76FF03", secondary: "#4A148C", desc: "Active Radiation Containment." },
+            { id: 16, name: "Clean Science", type: "Production", primary: "#FFFFFF", secondary: "#0038A8", desc: "M.A.M. & high-tech cleanrooms." },
+            { id: 17, name: "Bio Refining", type: "Production", primary: "#006B3F", secondary: "#D9CBB3", desc: "Biomass and organic refining." },
+            { id: 18, name: "Rare Material", type: "Production", primary: "#F48FB1", secondary: "#E1A3D1", desc: "Quartz & Alumina-specific tones." }
+        ];
+
+        const labelMap = {
+            "#FA9649": "FICSIT Primary", "#5F668C": "FICSIT Secondary", "#D9CBB3": "Pioneer Tan", 
+            "#222222": "Industrial Dark", "#7F7F7F": "Concrete Grey", "#FF0000": "Safety Red",
+            "#121214": "Circuit Black", "#FFE000": "Caution Yellow", "#006B3F": "Hwy Green",
+            "#FFFFFF": "Signal White", "#0038A8": "Info Blue", "#FF5722": "Blaze Orange",
+            "#FFB800": "Caterium Gold", "#3282BA": "Water Blue", "#BF360C": "Fuel Amber",
+            "#CDDC39": "Sulfur Lime", "#4A148C": "Toxic Purple", "#ECA53B": "Power Gold",
+            "#76FF03": "Nuclear Lime", "#F48FB1": "Quartz Pink", "#E1A3D1": "Advanced Rose"
+        };
+
+        const usageCards = [
+            { t: "Structural Matte", use: "Foundation Base", logic: "Use Swatch 3 (#222222) with a Matte finish. This hides foundation seams and creates a massive, singular industrial base.", hex: "#222222" },
+            { t: "Flow Management", use: "Input/Output Pipes", logic: "Paint pumps and buffers with fluid-matched swatches. Water (11), Fuel (12), and Acid (13).", hex: "#3282BA" },
+            { t: "Resource Coding", use: "Machine Clusters", logic: "Grey (4) for raw ore processing. Gold (10) for mid-tier tech. White (16) for late-game elevator parts.", hex: "#FFB800" }
+        ];
+
+        // --- 2. LOGIC ---
+        let currentFilter = 'All';
+        let registryChart, radarChart;
+
+        function getContrast(hex) {
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return (yiq >= 150) ? 'text-black' : 'text-white';
+        }
+
+        window.switchPage = function(page) {
+            const pageRegistry = document.getElementById('page-registry');
+            const pageManual = document.getElementById('page-manual');
+            const navRegistry = document.getElementById('nav-registry');
+            const navManual = document.getElementById('nav-manual');
+
+            if(pageRegistry) pageRegistry.classList.toggle('hidden', page !== 'registry');
+            if(pageManual) pageManual.classList.toggle('hidden', page !== 'manual');
+            
+            if(navRegistry) {
+                navRegistry.classList.toggle('tab-active', page === 'registry');
+                navRegistry.classList.toggle('text-white/50', page !== 'registry');
+            }
+            if(navManual) {
+                navManual.classList.toggle('tab-active', page === 'manual');
+                navManual.classList.toggle('text-white/50', page !== 'manual');
+            }
+
+            if (page === 'manual' && !radarChart) initRadar();
+        };
+
+        window.setFilter = function(f) {
+            currentFilter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => {
+                const isActive = b.innerText.toLowerCase() === f.toLowerCase();
+                b.classList.toggle('bg-ficsitOrange', isActive);
+                b.classList.toggle('text-white', isActive);
+                b.classList.toggle('text-slate-400', !isActive);
+            });
+            renderGrid();
+        };
+
+        function renderGrid() {
+            const grid = document.getElementById('swatch-grid');
+            if (!grid) return;
+            grid.innerHTML = swatches.filter(s => currentFilter === 'All' || s.type === currentFilter).map((s, idx) => `
+                <div class="swatch-card bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-sm flex flex-col h-full animate-content" style="animation-delay: ${idx*0.03}s">
+                    <div class="h-44 flex flex-col p-2 gap-1">
+                        <div onclick="copyHex('${s.primary}')" class="flex-1 rounded-2xl cursor-pointer flex items-center justify-between px-6 transition-all hover:opacity-90 active:scale-95 group" style="background-color: ${s.primary};">
+                            <span class="${getContrast(s.primary)} text-[9px] font-black uppercase tracking-widest opacity-60">Primary</span>
+                            <span class="${getContrast(s.primary)} font-mono font-bold text-xs group-hover:underline">${s.primary}</span>
+                        </div>
+                        <div onclick="copyHex('${s.secondary}')" class="flex-1 rounded-2xl cursor-pointer flex items-center justify-between px-6 transition-all hover:opacity-90 active:scale-95 group" style="background-color: ${s.secondary};">
+                            <span class="${getContrast(s.secondary)} text-[9px] font-black uppercase tracking-widest opacity-60">Secondary</span>
+                            <span class="${getContrast(s.secondary)} font-mono font-bold text-xs group-hover:underline">${s.secondary}</span>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID Slot ${s.id}</span>
+                            <span class="text-[8px] font-black px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase">${s.type}</span>
+                        </div>
+                        <h4 class="text-md font-black italic uppercase text-slate-900 leading-none mb-1">${s.name}</h4>
+                        <p class="text-[10px] text-slate-500 font-medium leading-relaxed">${s.desc}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderLibrary() {
+            const grid = document.getElementById('master-grid');
+            if (!grid) return;
+            const unique = new Set();
+            swatches.forEach(s => { unique.add(s.primary); unique.add(s.secondary); });
+            const list = Array.from(unique);
+            
+            const countBodyEl = document.getElementById('unique-count-body');
+            const countHeaderEl = document.getElementById('unique-count-header');
+            
+            if (countBodyEl) countBodyEl.textContent = `${list.length} Colors Synced`;
+            if (countHeaderEl) countHeaderEl.textContent = list.length;
+
+            grid.innerHTML = list.map(hex => `
+                <div onclick="copyHex('${hex}')" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md cursor-pointer transition-all active:scale-95">
+                    <div class="h-14 w-full rounded-xl mb-3 border border-black/5" style="background-color: ${hex}"></div>
+                    <p class="text-[10px] font-black uppercase text-slate-800 truncate mb-1">${labelMap[hex] || 'Custom Detail'}</p>
+                    <p class="text-[9px] font-mono text-slate-400 font-bold">${hex}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderManualContent() {
+            const usageGrid = document.getElementById('usage-grid');
+            const signageGrid = document.getElementById('signage-grid');
+            
+            if (usageGrid) {
+                usageGrid.innerHTML = usageCards.map(d => `
+                    <div class="info-card bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col h-full">
+                        <div class="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center border-4 border-slate-50 shadow-inner" style="background-color: ${d.hex}"></div>
+                        <h4 class="text-xl font-black italic uppercase mb-2">${d.t}</h4>
+                        <p class="text-xs font-bold text-ficsitOrange uppercase mb-4">Focus: ${d.use}</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">${d.logic}</p>
+                    </div>
+                `).join('');
+            }
+
+            if (signageGrid) {
+                const standards = [
+                    { t: "Destination", bg: "#006B3F", c: "#FFFFFF" },
+                    { t: "Information", bg: "#0038A8", c: "#FFFFFF" },
+                    { t: "Caution", bg: "#FFE000", c: "#121214" },
+                    { t: "Critical", bg: "#FF0000", c: "#FFFFFF" }
+                ];
+                signageGrid.innerHTML = standards.map(s => `
+                    <div class="flex flex-col">
+                        <div class="aspect-video rounded-xl flex items-center justify-center mb-4 shadow-lg border border-white/10" style="background-color: ${s.bg}">
+                            <span class="font-black text-xl italic" style="color: ${s.c}">${s.t.toUpperCase()}</span>
+                        </div>
+                        <p class="text-[10px] font-black uppercase text-slate-400">Type: ${s.t} Standard</p>
+                    </div>
+                `).join('');
+            }
+        }
+
+        window.copyHex = function(h) {
+            navigator.clipboard.writeText(h).catch(() => {
+                const el = document.createElement('textarea');
+                el.value = h; document.body.appendChild(el);
+                el.select(); document.execCommand('copy');
+                document.body.removeChild(el);
+            });
+            
+            const t = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            if (msgEl) msgEl.textContent = `${h} Copied!`;
+            if (t) {
+                t.classList.remove('hidden');
+                setTimeout(() => t.classList.add('hidden'), 2000);
+            }
+        };
+
+        // --- 3. VISUALIZATION ---
+        function initCharts() {
+            const regCanvas = document.getElementById('regChart');
+            if (!regCanvas) return;
+            const ctxReg = regCanvas.getContext('2d');
+            const types = {}; swatches.forEach(s => types[s.type] = (types[s.type] || 0) + 1);
+
+            registryChart = new Chart(ctxReg, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(types),
+                    datasets: [{
+                        data: Object.values(types),
+                        backgroundColor: ['#FA9649', '#5F668C', '#222222', '#FF0000', '#3282BA', '#006B3F'],
+                        borderWidth: 0, hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '80%',
+                    plugins: { legend: { position: 'bottom', labels: { font: { size: 10, weight: 'bold' }, usePointStyle: true, padding: 15 } } }
+                }
+            });
+        }
+
+        function initRadar() {
+            const radarCanvas = document.getElementById('radarChart');
+            if (!radarCanvas) return;
+            const ctxRadar = radarCanvas.getContext('2d');
+            radarChart = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: ['Branding', 'Logistics', 'Safety', 'Wayfinding', 'Infrastructure', 'Science'],
+                    datasets: [{
+                        label: 'SICS Coverage',
+                        data: [95, 80, 85, 90, 75, 70],
+                        backgroundColor: 'rgba(250, 150, 73, 0.2)',
+                        borderColor: '#FA9649',
+                        pointBackgroundColor: '#FA9649',
+                        pointBorderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderGrid();
+            renderLibrary();
+            renderManualContent();
+            initCharts();
+        });
+    </script>
+</body>
+</html>
